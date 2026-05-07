@@ -1,5 +1,6 @@
-name: 'Lint Code'
 /*jshint esversion: 8 */
+name: 'Lint Code'
+
 
 on:
   push:

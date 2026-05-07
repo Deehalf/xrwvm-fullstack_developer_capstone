@@ -15,6 +15,9 @@ from .populate import initiate
 from .models import CarMake, CarModel
 from .restapis import get_request, analyze_review_sentiments, post_review
 
+from . import restapis
+print("RESTAPIS FILE LOADED FROM:", restapis.__file__)
+
 
 
 
@@ -92,6 +95,7 @@ def get_cars(request):
 
 #Update the `get_dealerships` render list of dealerships all by default, particular state if state is passed
 def get_dealerships(request, state="All"):
+    print("RESTAPIS FILE LOADED FROM:", restapis.__file__)
     if(state == "All"):
         endpoint = "/fetchDealers"
     else:
@@ -107,7 +111,12 @@ def get_dealer_reviews(request, dealer_id):
         for review_detail in reviews:
             response = analyze_review_sentiments(review_detail['review'])
             print(response)
-            review_detail['sentiment'] = response['sentiment']
+
+            if response and 'sentiment' in response:
+                review_detail['sentiment'] = response['sentiment']
+            else:
+                review_detail['sentiment'] = "neutral"
+
         return JsonResponse({"status":200,"reviews":reviews})
     else:
         return JsonResponse({"status":400,"message":"Bad Request"})
@@ -116,18 +125,28 @@ def get_dealer_details(request, dealer_id):
     if(dealer_id):
         endpoint = "/fetchDealer/"+str(dealer_id)
         dealership = get_request(endpoint)
+        if dealership and isinstance(dealership, list):
+            dealership = dealership[0]
+
         return JsonResponse({"status":200,"dealer":dealership})
+
     else:
         return JsonResponse({"status":400,"message":"Bad Request"})
 
 def add_review(request):
-    if(request.user.is_anonymous == False):
-        data = json.loads(request.body)
-        try:
-            response = post_review(data)
-            return JsonResponse({"status":200})
-        except:
-            return JsonResponse({"status":401,"message":"Error in posting review"})
-    else:
-        return JsonResponse({"status":403,"message":"Unauthorized"})
+    if request.user.is_anonymous:
+        return JsonResponse({"status":403, "message":"Unauthorized"})
+
+    try:
+        # Decodificar correctamente el JSON
+        data = json.loads(request.body.decode('utf-8'))
+
+        # Enviar el JSON correcto a Node
+        response = post_review(data)
+
+        return JsonResponse({"status":200})
+    except Exception as e:
+        print("ERROR EN add_review:", e)
+        return JsonResponse({"status":401, "message":"Error in posting review"})
+
 

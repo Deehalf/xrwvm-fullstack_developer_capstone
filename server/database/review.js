@@ -40,5 +40,7 @@ const reviews = new Schema({
     required: true
   },
 });
+mongoose.set('debug', true);
+
 
 module.exports = mongoose.model('reviews', reviews);
